@@ -9,15 +9,19 @@ class object {
         yposition = 0,
         mass = 1,
         radius = 1,
-        velocity = 0,
-        time = 1
+        Xvelocity = 0,
+        Yvelocity = 0,
+        time = 1,
+        color = '#ffffff',
     ) {
         this.xposition = xposition;
         this.yposition = yposition;
-        this.velocity = velocity;
+        this.Xvelocity = Xvelocity;
+        this.Yvelocity = Yvelocity;
         this.radius = radius;
         this.mass = mass;
         this.time = time;
+        this.color = color;
 
         this.scapeVelocity = scapeVelocity(this.mass, this.radius);
         this.ScapeRadius = calcScapeRadius(this.mass, this.scapeVelocity) * 100;
@@ -59,40 +63,43 @@ class object {
 
             let obj = object.object;
 
-            let force = calcForce(this.mass, obj.mass, object.distance);
-            let aceleration = calcAceleration(force, this.mass);
-
-            this.velocity += aceleration * this.time;
-            // Não pode ser modulo
-            let difX = obj.xposition - this.xposition;
-            let difY = obj.yposition - this.yposition;
-
+            let difX = this.xposition - obj.xposition;
+            let difY = this.yposition - obj.yposition;
             let theta = calcTheta(difY, difX);
-            let xvelocity = this.velocity * Math.cos(theta);
-            let yvelocity = this.velocity * Math.sin(theta);
+             
+            let force = calcForce(this.mass, obj.mass, object.distance);
 
-            let nextDifX = Dif((this.xposition + xvelocity), obj.xposition);
-            let nextDifY = Dif((this.yposition + yvelocity), obj.yposition);
+            let forceX = force * Math.cos(theta);
+            let forceY = force * Math.sin(theta);
 
-            let nextDistance = calculateHypotenuse(nextDifX, nextDifY);
+            let accelerationX = calcAceleration(forceX, obj.mass);
+            let accelerationY = calcAceleration(forceY, obj.mass);
 
-            let radiusSum = this.radius + obj.radius;
+            let sumRadius = this.radius + obj.radius;
+            let dis = calculateHypotenuse(difX, difY);
 
-            if (nextDistance >= radiusSum) {
-                this.xposition += xvelocity;
-                this.yposition += yvelocity;
+            if (sumRadius <= dis) {
+                obj.Xvelocity += accelerationX * obj.time;
+                obj.Yvelocity += accelerationY * obj.time;
+            } else {
+                obj.Xvelocity = -(obj.Xvelocity + this.Xvelocity) / 1.5;
+                obj.Yvelocity = -(obj.Yvelocity + this.Yvelocity) / 1.5;
             }
-
-            this.updateSphere(this);
         });
     }
 
-    updateSphere(object) {
-        this.sphereDiv.style.backgroundColor = 'hsl(calc((' + this.mass + ' / 1500) * 360deg), 100%, 50%)';
+    changeOneTickGravity() {
+        this.xposition += this.Xvelocity;
+        this.yposition += this.Yvelocity;
+        this.updateSphere();
+    }
+
+    updateSphere() {
+        this.sphereDiv.style.backgroundColor = this.color;
         this.sphereDiv.style.width = (this.radius * 2) + 'px';
         this.sphereDiv.style.height = (this.radius * 2) + 'px';
-        this.sphereDiv.style.top = `${object.xposition}px`;
-        this.sphereDiv.style.left = `${object.yposition}px`;
+        this.sphereDiv.style.top = `${this.xposition}px`;
+        this.sphereDiv.style.left = `${this.yposition}px`;
     }
 
     showInfo() {
@@ -100,7 +107,8 @@ class object {
             `Info:
                 Xposition: ${this.xposition}
                 Yposition: ${this.yposition}
-                Velocity: ${this.velocity}
+                Xvelocity: ${this.Xvelocity}
+                Yvelocity: ${this.Yvelocity}
                 Radius: ${this.radius}
                 Mass: ${this.mass}
                 Time: ${this.time}
@@ -123,7 +131,7 @@ function calcScapeRadius(mass, scapeVelocity) {
 }
 
 function calcForce(mass1, mass2, distance) {
-    return NGConstant * (mass1 * mass2) / Math.pow(distance, 2);
+    return NGConstant * ((mass1 * mass2) / Math.pow(distance, 2));
 }
 
 function calcAceleration(force, mass) {

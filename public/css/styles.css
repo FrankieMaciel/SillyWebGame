@@ -6,6 +6,7 @@ html, body {
     width: 100vw;
     height: 100vh;
     margin: 0;
+    background-color: var(--spaceColor);
 }
 
 #space {
@@ -18,4 +19,5 @@ html, body {
 
 .sphere {
     transform: translate(-50%, -50%);
+    transition: all 0.1s ease;
 }
