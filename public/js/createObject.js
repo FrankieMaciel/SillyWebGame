@@ -1,12 +1,6 @@
 // Newton's gravitational constant
 const NGConstant = 6.67 * Math.pow(10, -11);
 
-function calculateHypotenuse(adjacentCathetus, oppositeCathetus) {
-    let aSquare = Math.pow(adjacentCathetus, 2);
-    let bSquare = Math.pow(oppositeCathetus, 2);
-    return Math.sqrt(aSquare + bSquare);
-}
-
 class object {
 
     constructor(
@@ -16,48 +10,41 @@ class object {
         mass = 1,
         radius = 1,
         velocity = 0,
-        tickSize = 1
+        time = 1
     ) {
-        this.radius = radius;
         this.xposition = xposition;
         this.yposition = yposition;
-        this.mass = mass;
         this.velocity = velocity;
-        this.tickSize = tickSize;
+        this.radius = radius;
+        this.mass = mass;
+        this.time = time;
 
-        this.area = Math.pow(radius, 2) * Math.PI;
-        this.density = this.mass / this.area;
-
-        this.scapeVelocity = Math.sqrt(2 * NGConstant * this.mass / this.radius);
-        this.gravitationalScapeRadius = Math.pow((2 * NGConstant * this.mass) / Math.pow(this.scapeVelocity, 2), 1/2);
+        this.scapeVelocity = scapeVelocity(this.mass, this.radius);
+        this.ScapeRadius = calcScapeRadius(this.mass, this.scapeVelocity) * 100;
 
         this.sphereDiv = document.createElement("div");
         this.sphereDiv.classList.add('sphere');
         this.sphereDiv.style.position = 'absolute';
-        
-        this.sphereDiv.style.backgroundColor = 'hsl(calc((' + this.mass + ' / 1500) * 360deg), 100%, 50%)';
-        this.sphereDiv.style.width = (this.radius * 2) + 'px';
-        this.sphereDiv.style.height = (this.radius * 2) + 'px';
-
-        this.sphereDiv.style.top = `${yposition}px`;
-        this.sphereDiv.style.left = `${xposition}px`;
-
         this.sphereDiv.style.borderRadius = '100%';
+
+        this.updateSphere(this);
+
         space.appendChild(this.sphereDiv);
+        this.showInfo();
     }
 
     calculateObjectInfluence(ObjectsToVerify) {
-        let influencedObjects = [];
-        
-        ObjectsToVerify.forEach(object => {
-            let xDistance = Math.abs(this.xposition - object.xposition);
-            let yDistance = Math.abs(this.yposition - object.yposition);
 
-            let finalDistance = calculateHypotenuse(xDistance, yDistance);
-            if (finalDistance <= this.gravitationalScapeRadius * 100) {
+        let influencedObjects = [];
+        ObjectsToVerify.forEach(obj => {
+            let difX = Dif(this.xposition, obj.xposition);
+            let difY = Dif(this.yposition, obj.yposition);
+            let Distance = calculateHypotenuse(difX, difY);
+  
+            if (Distance <= this.ScapeRadius) {
                 influencedObjects.push({
-                    object: object,
-                    distance: finalDistance
+                    object: obj,
+                    distance: Distance
                 });
             }
         });
@@ -69,40 +56,86 @@ class object {
         let ObjetsToCalculate = this.calculateObjectInfluence(ObjectsToVerifyFiltered);
 
         ObjetsToCalculate.forEach(object => {
-            let force = NGConstant * (this.mass * object.object.mass) / Math.pow(object.distance, 2);
-            let aceleration = force / this.mass;
-            this.velocity += aceleration * this.tickSize;
 
-            let distanceX = object.object.xposition - this.xposition;
-            let distanceY = object.object.yposition - this.yposition;
-            
-            let theta = Math.atan2(distanceY, distanceX);
+            let obj = object.object;
+
+            let force = calcForce(this.mass, obj.mass, object.distance);
+            let aceleration = calcAceleration(force, this.mass);
+
+            this.velocity += aceleration * this.time;
+            // Não pode ser modulo
+            let difX = obj.xposition - this.xposition;
+            let difY = obj.yposition - this.yposition;
+
+            let theta = calcTheta(difY, difX);
             let xvelocity = this.velocity * Math.cos(theta);
             let yvelocity = this.velocity * Math.sin(theta);
 
-            let nextAdjacentCathetus = Math.abs((this.xposition + xvelocity) - object.object.xposition);
-            let nextOppositeCathetus = Math.abs((this.yposition + yvelocity) - object.object.yposition);
+            let nextDifX = Dif((this.xposition + xvelocity), obj.xposition);
+            let nextDifY = Dif((this.yposition + yvelocity), obj.yposition);
 
-            let nextDistance = calculateHypotenuse(nextAdjacentCathetus, nextOppositeCathetus);
+            let nextDistance = calculateHypotenuse(nextDifX, nextDifY);
 
-            let radiusSome = this.radius + object.object.radius;
+            let radiusSum = this.radius + obj.radius;
 
-            if (nextDistance >= radiusSome) {
+            if (nextDistance >= radiusSum) {
                 this.xposition += xvelocity;
                 this.yposition += yvelocity;
-            } 
-            this.updateSpherePosition(this);
+            }
+
+            this.updateSphere(this);
         });
     }
 
-    updateSpherePosition(object) {
+    updateSphere(object) {
         this.sphereDiv.style.backgroundColor = 'hsl(calc((' + this.mass + ' / 1500) * 360deg), 100%, 50%)';
         this.sphereDiv.style.width = (this.radius * 2) + 'px';
         this.sphereDiv.style.height = (this.radius * 2) + 'px';
-
         this.sphereDiv.style.top = `${object.xposition}px`;
         this.sphereDiv.style.left = `${object.yposition}px`;
     }
+
+    showInfo() {
+        console.log(
+            `Info:
+                Xposition: ${this.xposition}
+                Yposition: ${this.yposition}
+                Velocity: ${this.velocity}
+                Radius: ${this.radius}
+                Mass: ${this.mass}
+                Time: ${this.time}
+        `)
+    }
+}
+
+function calculateHypotenuse(adjacentCathetus, oppositeCathetus) {
+    let aSquare = Math.pow(adjacentCathetus, 2);
+    let bSquare = Math.pow(oppositeCathetus, 2);
+    return Math.sqrt(aSquare + bSquare);
+}
+
+function scapeVelocity(mass, radius) {
+    return Math.sqrt(2 * NGConstant * mass / radius);
+}
+
+function calcScapeRadius(mass, scapeVelocity) {
+    return Math.pow((2 * NGConstant * mass) / Math.pow(scapeVelocity, 2), 1/2);
+}
+
+function calcForce(mass1, mass2, distance) {
+    return NGConstant * (mass1 * mass2) / Math.pow(distance, 2);
+}
+
+function calcAceleration(force, mass) {
+    return force / mass;
+}
+
+function calcTheta(disY, disX) {
+    return Math.atan2(disY, disX);
+}
+
+function Dif(num1, num2) {
+    return Math.abs(num1 - num2);
 }
 
 export {
