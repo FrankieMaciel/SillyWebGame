@@ -10,7 +10,6 @@ html, body {
 }
 
 #space {
-    background-color: var(--spaceColor);
     margin: 0;
     padding: 0;
     width: 100%;
